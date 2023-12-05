@@ -31,6 +31,9 @@ class Bytecode:
     type: BytecodeType
     value: Any = None
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.type!r}, {self.value!r})"
+
 
 class Compiler:
     """
