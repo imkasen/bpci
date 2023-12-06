@@ -7,11 +7,10 @@ from string import digits
 from sys import version_info
 from typing import Any, Generator
 
-# StrEnum 从 Python 3.11 开始引入
 assert version_info.major == 3 and version_info.minor >= 11
 
 
-class TokenType(StrEnum):
+class TokenType(StrEnum):  # StrEnum 从 Python 3.11 开始引入
     """
     标记类型
 
@@ -63,7 +62,6 @@ class Tokenizer:
         self.ptr += 1
         while self.ptr < len(self.code) and self.code[self.ptr] in digits:
             self.ptr += 1
-        # Did we actually read _any_ digits or did we only manage to read the `.`?
         float_str: str = self.code[start : self.ptr] if self.ptr - start > 1 else ".0"
         return float(float_str)
 
@@ -81,12 +79,11 @@ class Tokenizer:
             return Token(TokenType.EOF)
 
         char: str = self.code[self.ptr]
-        # self.ptr += 1  # We remove this.
         if char == "+":
-            self.ptr += 1  # We added this.
+            self.ptr += 1
             return Token(TokenType.PLUS)
         if char == "-":
-            self.ptr += 1  # We added this.
+            self.ptr += 1
             return Token(TokenType.MINUS)
         if char in digits:
             integer: int = self.consume_int()  # If we found a digit, consume an integer.
@@ -95,7 +92,7 @@ class Tokenizer:
                 decimal: float = self.consume_decimal()
                 return Token(TokenType.FLOAT, integer + decimal)
             return Token(TokenType.INT, integer)
-        if (  # Make sure we don't read a lone full stop `.`.
+        if (  # Floats start with '.', make sure we don't read a lone full stop `.`.
             char == "." and self.ptr + 1 < len(self.code) and self.code[self.ptr + 1] in digits
         ):
             decimal = self.consume_decimal()

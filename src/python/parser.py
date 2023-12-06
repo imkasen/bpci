@@ -24,8 +24,8 @@ class BinOp(TreeNode):
     """
 
     op: str
-    left: "Int | Float"  # <- We modify this here.
-    right: "Int | Float"  # <- We modify this here.
+    left: "Int | Float"
+    right: "Int | Float"
 
 
 @dataclass
@@ -58,12 +58,12 @@ def print_ast(tree: TreeNode, depth: int = 0) -> None:
     :param depth: 深度, defaults to 0
     """
     indent: str = "    " * depth
-    match tree:
+    match tree:  # 结构模式匹配从 Python 3.10 引入
         case BinOp(op, left, right):
             print(indent + op)
             print_ast(left, depth + 1)
             print_ast(right, depth + 1)
-        case Int(value) | Float(value):  # <- We add the Float here.
+        case Int(value) | Float(value):
             print(indent + str(value))
         case _:
             raise RuntimeError(f"Can't print a node of type {tree.__class__.__name__}")

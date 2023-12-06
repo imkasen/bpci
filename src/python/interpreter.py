@@ -61,12 +61,12 @@ class Interpreter:
             if bc.type == BytecodeType.PUSH:
                 self.stack.push(bc.value)
             elif bc.type == BytecodeType.BINOP:
-                right: int = self.stack.pop()
-                left: int = self.stack.pop()
+                right: int | float = self.stack.pop()
+                left: int | float = self.stack.pop()
                 if bc.value == "+":
-                    result: int = left + right
+                    result: int | float = left + right
                 elif bc.value == "-":
-                    result: int = left - right
+                    result: int | float = left - right
                 else:
                     raise RuntimeError(f"Unknown operator {bc.value}.")
                 self.stack.push(result)
@@ -85,5 +85,5 @@ if __name__ == "__main__":
     code: str = sys.argv[1]
     tokens = list(Tokenizer(code))
     tree: BinOp = Parser(tokens).parse()
-    bytecode = list(Compiler(tree).compile())
-    Interpreter(bytecode).interpret()
+    byte_code = list(Compiler(tree).compile())
+    Interpreter(byte_code).interpret()

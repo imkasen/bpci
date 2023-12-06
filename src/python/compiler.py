@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Any, Generator
 
-from python.parser import BinOp, Int
+from python.parser import BinOp, Float, Int
 
 
 class BytecodeType(StrEnum):
@@ -49,10 +49,10 @@ class Compiler:
 
         :yield: 返回字节码类
         """
-        left: Int = self.tree.left
+        left: Int | Float = self.tree.left
         yield Bytecode(BytecodeType.PUSH, left.value)
 
-        right: Int = self.tree.right
+        right: Int | Float = self.tree.right
         yield Bytecode(BytecodeType.PUSH, right.value)
 
         yield Bytecode(BytecodeType.BINOP, self.tree.op)
