@@ -1,7 +1,7 @@
 """
 解释器
 """
-from python.compiler import Bytecode, BytecodeType
+from python.compiler import Bytecode
 
 
 class Stack:
@@ -57,22 +57,34 @@ class Interpreter:
         :raises RuntimeError: 遇到除加减运算之外的符合时抛出错误
         """
         for bc in self.bytecode:
-            # Interpret this bytecode operator.
-            if bc.type == BytecodeType.PUSH:
-                self.stack.push(bc.value)
-            elif bc.type == BytecodeType.BINOP:
-                right: int | float = self.stack.pop()
-                left: int | float = self.stack.pop()
-                if bc.value == "+":
-                    result: int | float = left + right
-                elif bc.value == "-":
-                    result: int | float = left - right
-                else:
-                    raise RuntimeError(f"Unknown operator {bc.value}.")
-                self.stack.push(result)
+            bc_name: str = bc.type.value
+            interpret_method = getattr(self, f"interpret_{bc_name}", None)
+            if interpret_method is None:
+                raise RuntimeError(f"Can't interpret {bc_name}.")
+            interpret_method(bc)
 
         print("Done!")
         print(self.stack)
+
+    def interpret_push(self, bc: Bytecode) -> None:
+        """
+        解释入栈
+        """
+        self.stack.push(bc.value)
+
+    def interpret_binop(self, bc: Bytecode) -> None:
+        """
+        解释二元运算
+        """
+        right: int = self.stack.pop()
+        left: int = self.stack.pop()
+        if bc.value == "+":
+            result: int = left + right
+        elif bc.value == "-":
+            result = left - right
+        else:
+            raise RuntimeError(f"Unknown operator {bc.value}.")
+        self.stack.push(result)
 
 
 if __name__ == "__main__":

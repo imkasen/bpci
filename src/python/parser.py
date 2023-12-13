@@ -16,35 +16,38 @@ class TreeNode:
 
 
 @dataclass
-class BinOp(TreeNode):
+class Expr(TreeNode):
     """
-    二进制运算
-
-    :param TreeNode: 父类
+    表达式节点
     """
 
-    op: str
-    left: "Int | Float"
-    right: "Int | Float"
+    # pass
 
 
 @dataclass
-class Int(TreeNode):
+class BinOp(Expr):
+    """
+    二进制运算
+    """
+
+    op: str
+    left: Expr
+    right: Expr
+
+
+@dataclass
+class Int(Expr):
     """
     整数运算
-
-    :param TreeNode: 父类
     """
 
     value: int
 
 
 @dataclass
-class Float(TreeNode):
+class Float(Expr):
     """
     浮点数运算
-
-    :param TreeNode: 父类
     """
 
     value: float
@@ -52,26 +55,32 @@ class Float(TreeNode):
 
 def print_ast(tree: TreeNode, depth: int = 0) -> None:
     """
-    树打印
-
-    :param tree: 树节点
-    :param depth: 深度, defaults to 0
+    打印抽象语法树
     """
     indent: str = "    " * depth
+    node_name: str = tree.__class__.__name__
     match tree:  # 结构模式匹配从 Python 3.10 引入
         case BinOp(op, left, right):
-            print(indent + op)
+            print(f"{indent}{node_name}(\n{indent}    {op!r},")
             print_ast(left, depth + 1)
+            print(",")
             print_ast(right, depth + 1)
+            print(f",\n{indent})", end="")
         case Int(value) | Float(value):
-            print(indent + str(value))
+            print(f"{indent}{node_name}({value!r})", end="")
         case _:
-            raise RuntimeError(f"Can't print a node of type {tree.__class__.__name__}")
+            raise RuntimeError(f"Can't print a node of type {node_name}")
+    if depth == 0:
+        print()
 
 
 class Parser:
     """
     解析器类
+
+    program := computation
+    computation := number ( (PLUS | MINUS) number )*
+    number := INT | FLOAT
     """
 
     def __init__(self, tokens: list[Token]) -> None:
@@ -101,24 +110,25 @@ class Parser:
             return Int(self.eat(TokenType.INT).value)
         return Float(self.eat(TokenType.FLOAT).value)
 
-    def parse_computation(self) -> BinOp:
+    def parse_computation(self) -> Expr:
         """Parses a computation."""
-        left: Int | Float = self.parse_number()
+        result: Expr
+        result = self.parse_number()
 
-        if self.peek() == TokenType.PLUS:
-            op = "+"
-            self.eat(TokenType.PLUS)
-        else:
-            op = "-"
-            self.eat(TokenType.MINUS)
+        while (next_token_type := self.peek()) in {TokenType.PLUS, TokenType.MINUS}:
+            op: str = "+" if next_token_type == TokenType.PLUS else "-"
+            self.eat(next_token_type)
+            right: Expr = self.parse_number()
+            result = BinOp(op, result, right)
 
-        right: Int | Float = self.parse_number()
+        return result
 
-        return BinOp(op, left, right)
+    def parse(self) -> Expr:
+        """Parses the program.
 
-    def parse(self) -> BinOp:
-        """Parses the program."""
-        computation: BinOp = self.parse_computation()
+        program := computation EOF
+        """
+        computation: Expr = self.parse_computation()
         self.eat(TokenType.EOF)
         return computation
 
@@ -126,6 +136,6 @@ class Parser:
 if __name__ == "__main__":
     from python.tokenizer import Tokenizer
 
-    CODE = "3 + 5"
+    CODE = "3 + 5 - 7 + 1.2 + 2.4 - 3.6"
     parser = Parser(list(Tokenizer(CODE)))
-    print(parser.parse())  # BinOp(op='+', left=Int(value=3), right=Int(value=5))
+    print(parser.parse())

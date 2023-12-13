@@ -13,8 +13,6 @@ assert version_info.major == 3 and version_info.minor >= 11
 class TokenType(StrEnum):  # StrEnum 从 Python 3.11 开始引入
     """
     标记类型
-
-    :param StrEnum: 继承自 StrEnum，Python 3.11 引入
     """
 
     INT = auto()
