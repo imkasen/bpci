@@ -138,4 +138,4 @@ if __name__ == "__main__":
 
     CODE = "3 + 5 - 7 + 1.2 + 2.4 - 3.6"
     parser = Parser(list(Tokenizer(CODE)))
-    print(parser.parse())
+    print_ast(parser.parse())

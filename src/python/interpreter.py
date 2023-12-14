@@ -15,24 +15,18 @@ class Stack:
     def push(self, item: int) -> None:
         """
         入栈操作
-
-        :param item: 传入一个整数
         """
         self.stack.append(item)
 
     def pop(self) -> int:
         """
         出栈
-
-        :return: 返回一个整数
         """
         return self.stack.pop()
 
     def peek(self) -> int:
         """
         查看栈顶元素
-
-        :return: 返回整数元素的值
         """
         return self.stack[-1]
 
@@ -53,8 +47,6 @@ class Interpreter:
     def interpret(self) -> None:
         """
         解释字节码列表
-
-        :raises RuntimeError: 遇到除加减运算之外的符合时抛出错误
         """
         for bc in self.bytecode:
             bc_name: str = bc.type.value

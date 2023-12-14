@@ -3,12 +3,9 @@
 """
 from dataclasses import dataclass
 from enum import StrEnum, auto
-from sys import version_info
 from typing import Any, Generator
 
 from python.parser import BinOp, Float, Int, TreeNode
-
-assert version_info.major == 3 and version_info.minor >= 11
 
 
 class BytecodeType(StrEnum):

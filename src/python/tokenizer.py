@@ -66,9 +66,6 @@ class Tokenizer:
     def next_token(self) -> Token:
         """
         获取下一个标记
-
-        :raises RuntimeError: 当获取的标记不是 +、- 或数字时抛出错误
-        :return: Token 类型
         """
         while self.ptr < len(self.code) and self.code[self.ptr] == " ":
             self.ptr += 1
