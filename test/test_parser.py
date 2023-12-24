@@ -1,8 +1,10 @@
 """
 解析器测试
 """
-from python.parser import BinOp, Float, Int, Parser
-from python.tokenizer import Token, TokenType
+import pytest
+
+from python.parser import BinOp, Float, Int, Parser, UnaryOp
+from python.tokenizer import Token, Tokenizer, TokenType
 
 
 def test_parsing_addition():
@@ -189,4 +191,204 @@ def test_parsing_many_additions_and_subtractions():
             Float(2.4),
         ),
         Float(3.6),
+    )
+
+
+def test_parsing_unary_minus():
+    """
+    测试一元减号运算符
+    """
+    tokens = [
+        Token(TokenType.MINUS),
+        Token(TokenType.INT, 3),
+        Token(TokenType.EOF),
+    ]
+    tree = Parser(tokens).parse()
+    assert tree == UnaryOp("-", Int(3))
+
+
+def test_parsing_unary_plus():
+    """
+    测试一元加号运算符
+    """
+    tokens = [
+        Token(TokenType.PLUS),
+        Token(TokenType.FLOAT, 3.0),
+        Token(TokenType.EOF),
+    ]
+    tree = Parser(tokens).parse()
+    assert tree == UnaryOp("+", Float(3))
+
+
+def test_parsing_unary_operators():
+    """
+    测试一元运算符
+    """
+    # --++3.5 - 2
+    tokens = [
+        Token(TokenType.MINUS),
+        Token(TokenType.MINUS),
+        Token(TokenType.PLUS),
+        Token(TokenType.PLUS),
+        Token(TokenType.FLOAT, 3.5),
+        Token(TokenType.MINUS),
+        Token(TokenType.INT, 2),
+        Token(TokenType.EOF),
+    ]
+    tree = Parser(tokens).parse()
+    assert tree == BinOp(
+        "-",
+        UnaryOp(
+            "-",
+            UnaryOp(
+                "-",
+                UnaryOp(
+                    "+",
+                    UnaryOp(
+                        "+",
+                        Float(3.5),
+                    ),
+                ),
+            ),
+        ),
+        Int(2),
+    )
+
+
+def test_parsing_parentheses():
+    """
+    测试解析小括号
+    """
+    # 1 + ( 2 + 3 )
+    tokens = [
+        Token(TokenType.INT, 1),
+        Token(TokenType.PLUS),
+        Token(TokenType.LPAREN),
+        Token(TokenType.INT, 2),
+        Token(TokenType.PLUS),
+        Token(TokenType.INT, 3),
+        Token(TokenType.RPAREN),
+        Token(TokenType.EOF),
+    ]
+    tree = Parser(tokens).parse()
+    assert tree == BinOp(
+        "+",
+        Int(1),
+        BinOp(
+            "+",
+            Int(2),
+            Int(3),
+        ),
+    )
+
+
+def test_parsing_parentheses_around_single_number():
+    """
+    测试解析单个数字周围的小括号
+    """
+    # ( ( ( 1 ) ) ) + ( 2 + ( 3 ) )
+    tokens = [
+        Token(TokenType.LPAREN),
+        Token(TokenType.LPAREN),
+        Token(TokenType.LPAREN),
+        Token(TokenType.INT, 1),
+        Token(TokenType.RPAREN),
+        Token(TokenType.RPAREN),
+        Token(TokenType.RPAREN),
+        Token(TokenType.PLUS),
+        Token(TokenType.LPAREN),
+        Token(TokenType.INT, 2),
+        Token(TokenType.PLUS),
+        Token(TokenType.LPAREN),
+        Token(TokenType.INT, 3),
+        Token(TokenType.RPAREN),
+        Token(TokenType.RPAREN),
+        Token(TokenType.EOF),
+    ]
+    tree = Parser(tokens).parse()
+    assert tree == BinOp(
+        "+",
+        Int(1),
+        BinOp(
+            "+",
+            Int(2),
+            Int(3),
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "(1",
+        "()",
+        ") 1 + 2",
+        "1 + 2)",
+        "1 (+) 2",
+        "1 + )2(",
+    ],
+)
+def test_unbalanced_parentheses(code: str):
+    """
+    测试不成对的小括号
+    """
+    tokens = list(Tokenizer(code))
+    with pytest.raises(RuntimeError):
+        Parser(tokens).parse()
+
+
+def test_parsing_more_operators():
+    """
+    测试 *、/、%、** 运算符
+    """
+    # "1 % -2 ** -3 / 5 * 2 + 2 ** 3"
+    tokens = [
+        Token(TokenType.INT, 1),
+        Token(TokenType.MOD),
+        Token(TokenType.MINUS),
+        Token(TokenType.INT, 2),
+        Token(TokenType.EXP),
+        Token(TokenType.MINUS),
+        Token(TokenType.INT, 3),
+        Token(TokenType.DIV),
+        Token(TokenType.INT, 5),
+        Token(TokenType.MUL),
+        Token(TokenType.INT, 2),
+        Token(TokenType.PLUS),
+        Token(TokenType.INT, 2),
+        Token(TokenType.EXP),
+        Token(TokenType.INT, 3),
+        Token(TokenType.EOF),
+    ]
+    tree = Parser(tokens).parse()
+    assert tree == BinOp(
+        "+",
+        BinOp(
+            "*",
+            BinOp(
+                "/",
+                BinOp(
+                    "%",
+                    Int(1),
+                    UnaryOp(
+                        "-",
+                        BinOp(
+                            "**",
+                            Int(2),
+                            UnaryOp(
+                                "-",
+                                Int(3),
+                            ),
+                        ),
+                    ),
+                ),
+                Int(5),
+            ),
+            Int(2),
+        ),
+        BinOp(
+            "**",
+            Int(2),
+            Int(3),
+        ),
     )

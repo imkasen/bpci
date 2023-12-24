@@ -25,9 +25,19 @@ class Expr(TreeNode):
 
 
 @dataclass
+class UnaryOp(Expr):
+    """
+    一元运算
+    """
+
+    op: str
+    value: Expr
+
+
+@dataclass
 class BinOp(Expr):
     """
-    二进制运算
+    二元运算
     """
 
     op: str
@@ -38,7 +48,7 @@ class BinOp(Expr):
 @dataclass
 class Int(Expr):
     """
-    整数运算
+    整数
     """
 
     value: int
@@ -47,7 +57,7 @@ class Int(Expr):
 @dataclass
 class Float(Expr):
     """
-    浮点数运算
+    浮点数
     """
 
     value: float
@@ -60,6 +70,10 @@ def print_ast(tree: TreeNode, depth: int = 0) -> None:
     indent: str = "    " * depth
     node_name: str = tree.__class__.__name__
     match tree:  # 结构模式匹配从 Python 3.10 引入
+        case UnaryOp(op, value):
+            print(f"{indent}{node_name}(\n{indent}    {op!r},")
+            print_ast(value, depth + 1)
+            print(f",\n{indent})", end="")
         case BinOp(op, left, right):
             print(f"{indent}{node_name}(\n{indent}    {op!r},")
             print_ast(left, depth + 1)
@@ -79,17 +93,21 @@ class Parser:
     解析器类
 
     program := computation
-    computation := number ( (PLUS | MINUS) number )*
+    computation := term ( (PLUS | MINUS) term )*
+    term := unary ( (MUL | DIV | MOD) unary )*
+    unary := PLUS unary | MINUS unary | exponentiation
+    exponentiation := atom EXP unary | atom
+    atom := LPAREN computation RPAREN | number
     number := INT | FLOAT
     """
 
     def __init__(self, tokens: list[Token]) -> None:
         self.tokens: list[Token] = tokens
-        self.next_token_index: int = 0
-        """Points to the next token to be consumed."""
+        self.next_token_index: int = 0  # Points to the next token to be consumed.
 
     def eat(self, expected_token_type: TokenType) -> Token:
-        """Returns the next token if it is of the expected type.
+        """
+        Returns the next token if it is of the expected type.
 
         If the next token is not of the expected type, this raises an error.
         """
@@ -100,31 +118,102 @@ class Parser:
         return next_token
 
     def peek(self, skip: int = 0) -> TokenType | None:
-        """Checks the type of an upcoming token without consuming it."""
+        """
+        Checks the type of an upcoming token without consuming it.
+        """
         peek_at: int = self.next_token_index + skip
         return self.tokens[peek_at].type if peek_at < len(self.tokens) else None
 
     def parse_number(self) -> Int | Float:
-        """Parses an integer or a float."""
+        """
+        Parses an integer or a float.
+
+        number := INT | FLOAT
+        """
         if self.peek() == TokenType.INT:
             return Int(self.eat(TokenType.INT).value)
         return Float(self.eat(TokenType.FLOAT).value)
 
+    def parse_atom(self) -> Expr:
+        """
+        Parses a parenthesised expression or a number.
+
+        atom := LPAREN computation RPAREN | number
+        """
+        if self.peek() == TokenType.LPAREN:
+            self.eat(TokenType.LPAREN)
+            result: Expr = self.parse_computation()
+            self.eat(TokenType.RPAREN)
+        else:
+            result = self.parse_number()
+        return result
+
+    def parse_exponentiation(self) -> Expr:
+        """
+        Parses an exponentiation operator.
+
+        exponentiation := atom EXP unary | atom
+        """
+        result: Expr = self.parse_atom()
+        if self.peek() == TokenType.EXP:
+            self.eat(TokenType.EXP)
+            result = BinOp("**", result, self.parse_unary())
+        return result
+
+    def parse_unary(self) -> Expr:
+        """
+        Parses an unary operator.
+
+        unary := PLUS unary | MINUS unary | exponentiation
+        """
+        if (next_token_type := self.peek()) in {TokenType.PLUS, TokenType.MINUS}:
+            op: str = "+" if next_token_type == TokenType.PLUS else "-"
+            self.eat(next_token_type)
+            value: Expr = self.parse_unary()
+            return UnaryOp(op, value)
+        return self.parse_exponentiation()  # No unary operators in sight.
+
+    def parse_term(self) -> Expr:
+        """
+        Parses an expression with multiplications, divisions, and modulo operations.
+
+        term := unary ( (MUL | DIV | MOD) unary )*
+        """
+        result: Expr = self.parse_unary()
+
+        TYPES_TO_OPS: dict[TokenType, str] = {  # pylint: disable=C0103
+            TokenType.MUL: "*",
+            TokenType.DIV: "/",
+            TokenType.MOD: "%",
+        }
+
+        while (next_token_type := self.peek()) in TYPES_TO_OPS:
+            op: str = TYPES_TO_OPS[next_token_type]
+            self.eat(next_token_type)
+            right: Expr = self.parse_unary()
+            result = BinOp(op, result, right)
+
+        return result
+
     def parse_computation(self) -> Expr:
-        """Parses a computation."""
-        result: Expr
-        result = self.parse_number()
+        """
+        Parses a computation.
+
+        computation := term ( (PLUS | MINUS) term )*
+        """
+        result: Expr = self.parse_term()
 
         while (next_token_type := self.peek()) in {TokenType.PLUS, TokenType.MINUS}:
             op: str = "+" if next_token_type == TokenType.PLUS else "-"
             self.eat(next_token_type)
-            right: Expr = self.parse_number()
+            right: Expr = self.parse_term()
             result = BinOp(op, result, right)
 
         return result
 
     def parse(self) -> Expr:
-        """Parses the program.
+        """
+        Parses the program.
 
         program := computation EOF
         """
@@ -136,6 +225,6 @@ class Parser:
 if __name__ == "__main__":
     from python.tokenizer import Tokenizer
 
-    CODE = "3 + 5 - 7 + 1.2 + 2.4 - 3.6"
+    CODE = "1 + (2 + 3)"
     parser = Parser(list(Tokenizer(CODE)))
     print_ast(parser.parse())

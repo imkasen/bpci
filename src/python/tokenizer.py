@@ -20,9 +20,26 @@ class TokenType(StrEnum):  # StrEnum 从 Python 3.11 开始引入
     PLUS = auto()
     MINUS = auto()
     EOF = auto()
+    LPAREN = auto()
+    RPAREN = auto()
+    MUL = auto()
+    DIV = auto()
+    MOD = auto()
+    EXP = auto()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
+
+
+CHARS_AS_TOKENS: dict[str, TokenType] = {
+    "+": TokenType.PLUS,
+    "-": TokenType.MINUS,
+    "(": TokenType.LPAREN,
+    ")": TokenType.RPAREN,
+    "*": TokenType.MUL,
+    "/": TokenType.DIV,
+    "%": TokenType.MOD,
+}
 
 
 @dataclass
@@ -63,6 +80,10 @@ class Tokenizer:
         float_str: str = self.code[start : self.ptr] if self.ptr - start > 1 else ".0"
         return float(float_str)
 
+    def peek(self, length: int = 1) -> str | None:
+        """Returns the substring that will be tokenized next."""
+        return self.code[self.ptr : self.ptr + length]
+
     def next_token(self) -> Token:
         """
         获取下一个标记
@@ -74,12 +95,12 @@ class Tokenizer:
             return Token(TokenType.EOF)
 
         char: str = self.code[self.ptr]
-        if char == "+":
+        if self.peek(length=2) == "**":
+            self.ptr += 2
+            return Token(TokenType.EXP)
+        if char in CHARS_AS_TOKENS:
             self.ptr += 1
-            return Token(TokenType.PLUS)
-        if char == "-":
-            self.ptr += 1
-            return Token(TokenType.MINUS)
+            return Token(CHARS_AS_TOKENS[char])
         if char in digits:
             integer: int = self.consume_int()  # If we found a digit, consume an integer.
             # Is the integer followed by a decimal part?

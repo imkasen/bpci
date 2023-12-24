@@ -1,7 +1,18 @@
 """
 解释器
 """
+import operator
+
 from python.compiler import Bytecode
+
+BINOPS_TO_OPERATOR = {
+    "**": operator.pow,
+    "%": operator.mod,
+    "/": operator.truediv,
+    "*": operator.mul,
+    "+": operator.add,
+    "-": operator.sub,
+}
 
 
 class Stack:
@@ -70,10 +81,22 @@ class Interpreter:
         """
         right: int = self.stack.pop()
         left: int = self.stack.pop()
+        op = BINOPS_TO_OPERATOR.get(bc.value, None)
+        if op is not None:
+            result = op(left, right)
+        else:
+            raise RuntimeError(f"Unknown operator {bc.value}.")
+        self.stack.push(result)
+
+    def interpret_unaryop(self, bc: Bytecode) -> None:
+        """
+        解释一元运算
+        """
+        result: int = self.stack.pop()
         if bc.value == "+":
-            result: int = left + right
+            pass
         elif bc.value == "-":
-            result = left - right
+            result = -result
         else:
             raise RuntimeError(f"Unknown operator {bc.value}.")
         self.stack.push(result)

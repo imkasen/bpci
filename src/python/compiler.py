@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Any, Generator
 
-from python.parser import BinOp, Float, Int, TreeNode
+from python.parser import BinOp, Float, Int, TreeNode, UnaryOp
 
 
 class BytecodeType(StrEnum):
@@ -14,6 +14,7 @@ class BytecodeType(StrEnum):
     """
 
     BINOP = auto()
+    UNARYOP = auto()
     PUSH = auto()
 
     def __repr__(self) -> str:
@@ -62,7 +63,14 @@ class Compiler:
             raise RuntimeError(f"Can't compile {node_name}.")
         yield from compile_method(tree)
 
-    def compile_BinOp(self, tree: BinOp) -> Generator[Bytecode, None, None]:
+    def compile_UnaryOp(self, tree: UnaryOp) -> Generator[Bytecode, None, None]:  # pylint: disable=C0103
+        """
+        编译一元运算符
+        """
+        yield from self._compile(tree.value)
+        yield Bytecode(BytecodeType.UNARYOP, tree.op)
+
+    def compile_BinOp(self, tree: BinOp) -> Generator[Bytecode, None, None]:  # pylint: disable=C0103
         """
         编译二元运算符
         """
@@ -70,13 +78,13 @@ class Compiler:
         yield from self._compile(tree.right)
         yield Bytecode(BytecodeType.BINOP, tree.op)
 
-    def compile_Int(self, tree: Int) -> Generator[Bytecode, None, None]:
+    def compile_Int(self, tree: Int) -> Generator[Bytecode, None, None]:  # pylint: disable=C0103
         """
         编译整数
         """
         yield Bytecode(BytecodeType.PUSH, tree.value)
 
-    def compile_Float(self, tree: Float) -> Generator[Bytecode, None, None]:
+    def compile_Float(self, tree: Float) -> Generator[Bytecode, None, None]:  # pylint: disable=C0103
         """
         编译浮点数
         """
