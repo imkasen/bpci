@@ -2,8 +2,9 @@
 解释器
 """
 import operator
+from typing import Any
 
-from python.compiler import Bytecode
+from .compiler import Bytecode
 
 BINOPS_TO_OPERATOR = {
     "**": operator.pow,
@@ -54,6 +55,7 @@ class Interpreter:
         self.stack = Stack()
         self.bytecode: list[Bytecode] = bytecode
         self.ptr: int = 0
+        self.last_value_popped: Any = None
 
     def interpret(self) -> None:
         """
@@ -67,13 +69,20 @@ class Interpreter:
             interpret_method(bc)
 
         print("Done!")
-        print(self.stack)
+        # print(self.stack)
+        print(self.last_value_popped)
 
     def interpret_push(self, bc: Bytecode) -> None:
         """
         解释入栈
         """
         self.stack.push(bc.value)
+
+    def interpret_pop(self, bc: Bytecode) -> None:
+        """
+        解释弹出
+        """
+        self.last_value_popped = self.stack.pop()
 
     def interpret_binop(self, bc: Bytecode) -> None:
         """

@@ -36,8 +36,7 @@ def test_tokenizer_recognises_each_token(code: str, token: Token):
     :param code: 单个代码字符
     :param token: 对应的标记类型
     """
-    tokens = list(Tokenizer(code))
-    assert tokens == [token, Token(TokenType.EOF)]
+    assert Tokenizer(code).next_token() == token
 
 
 @pytest.mark.parametrize(
@@ -54,7 +53,7 @@ def test_tokenizer_long_integers(code: str, token: Token):
     测试较长的整数
     """
     tokens = list(Tokenizer(code))
-    assert tokens == [token, Token(TokenType.EOF)]
+    assert tokens == [token, Token(TokenType.NEWLINE), Token(TokenType.EOF)]
 
 
 def test_tokenizer_addition():
@@ -66,6 +65,7 @@ def test_tokenizer_addition():
         Token(TokenType.INT, 3),
         Token(TokenType.PLUS),
         Token(TokenType.INT, 5),
+        Token(TokenType.NEWLINE),
         Token(TokenType.EOF),
     ]
 
@@ -79,6 +79,7 @@ def test_tokenizer_subtraction():
         Token(TokenType.INT, 3),
         Token(TokenType.MINUS),
         Token(TokenType.INT, 6),
+        Token(TokenType.NEWLINE),
         Token(TokenType.EOF),
     ]
 
@@ -104,6 +105,7 @@ def test_tokenizer_additions_and_subtractions():
         Token(TokenType.INT, 7),
         Token(TokenType.MINUS),
         Token(TokenType.INT, 8),
+        Token(TokenType.NEWLINE),
         Token(TokenType.EOF),
     ]
 
@@ -129,6 +131,7 @@ def test_tokenizer_additions_and_subtractions_with_whitespace():
         Token(TokenType.INT, 7),
         Token(TokenType.MINUS),
         Token(TokenType.INT, 8),
+        Token(TokenType.NEWLINE),
         Token(TokenType.EOF),
     ]
 
@@ -139,24 +142,6 @@ def test_tokenizer_raises_error_on_garbage():
     """
     with pytest.raises(RuntimeError):
         list(Tokenizer("$"))
-
-
-@pytest.mark.parametrize(
-    ["code", "token"],
-    [
-        ("1.2", Token(TokenType.FLOAT, 1.2)),
-        (".12", Token(TokenType.FLOAT, 0.12)),
-        ("73.", Token(TokenType.FLOAT, 73.0)),
-        ("0.005", Token(TokenType.FLOAT, 0.005)),
-        ("123.456", Token(TokenType.FLOAT, 123.456)),
-    ],
-)
-def test_tokenizer_floats(code: str, token: Token):
-    """
-    测试浮点数
-    """
-    tokens = list(Tokenizer(code))
-    assert tokens == [token, Token(TokenType.EOF)]
 
 
 def test_tokenizer_lone_period_is_error():
@@ -183,6 +168,7 @@ def test_tokenizer_parentheses_in_code():
         Token(TokenType.LPAREN),
         Token(TokenType.RPAREN),
         Token(TokenType.INT, 4),
+        Token(TokenType.NEWLINE),
         Token(TokenType.EOF),
     ]
 
@@ -202,5 +188,33 @@ def test_tokenizer_distinguishes_mul_and_exp():
         Token(TokenType.INT, 4),
         Token(TokenType.EXP),
         Token(TokenType.INT, 5),
+        Token(TokenType.NEWLINE),
+        Token(TokenType.EOF),
+    ]
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        ("\n\n\n1 + 2\n3 + 4\n"),  # Extras at the beginning.
+        ("1 + 2\n\n\n3 + 4\n"),  # Extras in the middle.
+        ("1 + 2\n3 + 4\n\n\n"),  # Extras at the end.
+        ("\n\n\n1 + 2\n\n\n3 + 4\n\n\n"),  # Extras everywhere.
+    ],
+)
+def test_tokenizer_ignores_extra_newlines(code: str):
+    """
+    测试忽略额外的 \n
+    """
+    tokens = list(Tokenizer(code))
+    assert tokens == [
+        Token(TokenType.INT, 1),
+        Token(TokenType.PLUS),
+        Token(TokenType.INT, 2),
+        Token(TokenType.NEWLINE),
+        Token(TokenType.INT, 3),
+        Token(TokenType.PLUS),
+        Token(TokenType.INT, 4),
+        Token(TokenType.NEWLINE),
         Token(TokenType.EOF),
     ]

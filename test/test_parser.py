@@ -3,7 +3,7 @@
 """
 import pytest
 
-from python.parser import BinOp, Float, Int, Parser, UnaryOp
+from python.parser import BinOp, ExprStatement, Float, Int, Parser, Program, UnaryOp
 from python.tokenizer import Token, Tokenizer, TokenType
 
 
@@ -15,9 +15,8 @@ def test_parsing_addition():
         Token(TokenType.INT, 3),
         Token(TokenType.PLUS),
         Token(TokenType.INT, 5),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "+",
         Int(3),
@@ -33,9 +32,8 @@ def test_parsing_subtraction():
         Token(TokenType.INT, 5),
         Token(TokenType.MINUS),
         Token(TokenType.INT, 2),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "-",
         Int(5),
@@ -51,9 +49,8 @@ def test_parsing_addition_with_floats():
         Token(TokenType.FLOAT, 0.5),
         Token(TokenType.PLUS),
         Token(TokenType.INT, 5),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "+",
         Float(0.5),
@@ -69,9 +66,8 @@ def test_parsing_subtraction_with_floats():
         Token(TokenType.FLOAT, 5.0),
         Token(TokenType.MINUS),
         Token(TokenType.FLOAT, 0.2),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "-",
         Float(5.0),
@@ -85,9 +81,8 @@ def test_parsing_single_integer():
     """
     tokens = [
         Token(TokenType.INT, 3),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == Int(3)
 
 
@@ -97,9 +92,8 @@ def test_parsing_single_float():
     """
     tokens = [
         Token(TokenType.FLOAT, 3.0),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == Float(3.0)
 
 
@@ -113,9 +107,8 @@ def test_parsing_addition_then_subtraction():
         Token(TokenType.INT, 5),
         Token(TokenType.MINUS),
         Token(TokenType.FLOAT, 0.2),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "-",
         BinOp(
@@ -137,9 +130,8 @@ def test_parsing_subtraction_then_addition():
         Token(TokenType.INT, 5),
         Token(TokenType.PLUS),
         Token(TokenType.FLOAT, 0.2),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "+",
         BinOp(
@@ -168,9 +160,8 @@ def test_parsing_many_additions_and_subtractions():
         Token(TokenType.FLOAT, 2.4),
         Token(TokenType.MINUS),
         Token(TokenType.FLOAT, 3.6),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "-",
         BinOp(
@@ -201,9 +192,8 @@ def test_parsing_unary_minus():
     tokens = [
         Token(TokenType.MINUS),
         Token(TokenType.INT, 3),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == UnaryOp("-", Int(3))
 
 
@@ -214,9 +204,8 @@ def test_parsing_unary_plus():
     tokens = [
         Token(TokenType.PLUS),
         Token(TokenType.FLOAT, 3.0),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == UnaryOp("+", Float(3))
 
 
@@ -233,9 +222,8 @@ def test_parsing_unary_operators():
         Token(TokenType.FLOAT, 3.5),
         Token(TokenType.MINUS),
         Token(TokenType.INT, 2),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "-",
         UnaryOp(
@@ -268,9 +256,8 @@ def test_parsing_parentheses():
         Token(TokenType.PLUS),
         Token(TokenType.INT, 3),
         Token(TokenType.RPAREN),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "+",
         Int(1),
@@ -303,9 +290,8 @@ def test_parsing_parentheses_around_single_number():
         Token(TokenType.INT, 3),
         Token(TokenType.RPAREN),
         Token(TokenType.RPAREN),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "+",
         Int(1),
@@ -358,9 +344,8 @@ def test_parsing_more_operators():
         Token(TokenType.INT, 2),
         Token(TokenType.EXP),
         Token(TokenType.INT, 3),
-        Token(TokenType.EOF),
     ]
-    tree = Parser(tokens).parse()
+    tree = Parser(tokens).parse_computation()
     assert tree == BinOp(
         "+",
         BinOp(
@@ -391,4 +376,55 @@ def test_parsing_more_operators():
             Int(2),
             Int(3),
         ),
+    )
+
+
+def test_parsing_multiple_statements():
+    """
+    测试解析多语句
+    """
+    code = "1 % -2\n5 ** -3 / 5\n1 * 2 + 2 ** 3\n"
+    tree = Parser(list(Tokenizer(code))).parse()
+    assert tree == Program(
+        [
+            ExprStatement(
+                BinOp(
+                    "%",
+                    Int(1),
+                    UnaryOp(
+                        "-",
+                        Int(2),
+                    ),
+                ),
+            ),
+            ExprStatement(
+                BinOp(
+                    "/",
+                    BinOp(
+                        "**",
+                        Int(5),
+                        UnaryOp(
+                            "-",
+                            Int(3),
+                        ),
+                    ),
+                    Int(5),
+                ),
+            ),
+            ExprStatement(
+                BinOp(
+                    "+",
+                    BinOp(
+                        "*",
+                        Int(1),
+                        Int(2),
+                    ),
+                    BinOp(
+                        "**",
+                        Int(2),
+                        Int(3),
+                    ),
+                ),
+            ),
+        ]
     )

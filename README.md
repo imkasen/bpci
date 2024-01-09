@@ -8,3 +8,4 @@
 - 第二篇：[《构建一个 Python 编译器和解释器 - 02 数字》](./translations/02.md)
 - 第三篇：[《构建一个 Python 编译器和解释器 - 03 访问者模式》](./translations/03.md)
 - 第四篇：[《构建一个 Python 编译器和解释器 - 04 算数》](./translations/04.md)
+- 第五篇：[《构建一个 Python 编译器和解释器 - 05 语句》](./translations/05.md)

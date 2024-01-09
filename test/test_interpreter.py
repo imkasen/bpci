@@ -28,7 +28,8 @@ def run_computation(code: str) -> int:
     bytecode = list(Compiler(tree).compile())
     interpreter = Interpreter(bytecode)
     interpreter.interpret()
-    return interpreter.stack.pop()
+    # return interpreter.stack.pop()
+    return interpreter.last_value_popped  # <-- Changed!
 
 
 @pytest.mark.parametrize(

@@ -2,7 +2,7 @@
 编译器测试
 """
 from python.compiler import Bytecode, BytecodeType, Compiler
-from python.parser import BinOp, Float, Int, UnaryOp
+from python.parser import BinOp, ExprStatement, Float, Int, Program, UnaryOp
 
 
 def test_compile_addition():
@@ -196,4 +196,28 @@ def test_compile_modulo():
         Bytecode(BytecodeType.PUSH, -3),
         Bytecode(BytecodeType.PUSH, -5.6),
         Bytecode(BytecodeType.BINOP, "%"),
+    ]
+
+
+def test_compile_program_and_expr_statement():
+    """
+    测试程序和表达式
+    """
+    tree = Program(
+        [
+            ExprStatement(Int(1)),
+            ExprStatement(Float(2.0)),
+            ExprStatement(BinOp("+", Float(3.0), Float(4.0))),
+        ]
+    )
+    bytecode = list(Compiler(tree).compile())
+    assert bytecode == [
+        Bytecode(BytecodeType.PUSH, 1),
+        Bytecode(BytecodeType.POP),
+        Bytecode(BytecodeType.PUSH, 2.0),
+        Bytecode(BytecodeType.POP),
+        Bytecode(BytecodeType.PUSH, 3.0),
+        Bytecode(BytecodeType.PUSH, 4.0),
+        Bytecode(BytecodeType.BINOP, "+"),
+        Bytecode(BytecodeType.POP),
     ]

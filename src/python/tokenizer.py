@@ -15,17 +15,18 @@ class TokenType(StrEnum):  # StrEnum 从 Python 3.11 开始引入
     标记类型
     """
 
-    INT = auto()
-    FLOAT = auto()
-    PLUS = auto()
-    MINUS = auto()
-    EOF = auto()
-    LPAREN = auto()
-    RPAREN = auto()
-    MUL = auto()
-    DIV = auto()
-    MOD = auto()
-    EXP = auto()
+    INT = auto()  # integers
+    FLOAT = auto()  # floats
+    PLUS = auto()  # +
+    MINUS = auto()  # -
+    EOF = auto()  # end of file
+    LPAREN = auto()  # (
+    RPAREN = auto()  # )
+    MUL = auto()  # *
+    DIV = auto()  # /
+    MOD = auto()  # %
+    EXP = auto()  # **
+    NEWLINE = auto()  # statement separator
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
@@ -61,8 +62,9 @@ class Tokenizer:
     """
 
     def __init__(self, code: str) -> None:
-        self.code: str = code
+        self.code: str = code + "\n"  # Ensure the program ends with a newline.
         self.ptr: int = 0
+        self.beginning_of_line = True
 
     def consume_int(self) -> int:
         """Reads an integer from the source code."""
@@ -94,7 +96,19 @@ class Tokenizer:
         if self.ptr == len(self.code):
             return Token(TokenType.EOF)
 
+        # Handle the newline case.
         char: str = self.code[self.ptr]
+        if char == "\n":
+            self.ptr += 1
+            if not self.beginning_of_line:
+                self.beginning_of_line = True
+                return Token(TokenType.NEWLINE)
+            else:  # If we're at the BoL, get the next token instead.
+                return self.next_token()
+
+        # If we got to this point, we're about to produce another token
+        # so we can set BoL to False.
+        self.beginning_of_line = False
         if self.peek(length=2) == "**":
             self.ptr += 2
             return Token(TokenType.EXP)
